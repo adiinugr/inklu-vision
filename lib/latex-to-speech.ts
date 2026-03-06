@@ -67,6 +67,16 @@ function convertMath(latex: string): string {
   text = text.replace(/\\[a-zA-Z]+/g, "");
   text = text.replace(/[{}\\]/g, "");
 
+  // Implicit multiplication: closing paren followed by letter/number → "dikali"
+  // e.g. (n+1)b → (n+1) dikali b
+  text = text.replace(/\)\s*([a-zA-Z0-9])/g, " dikali $1");
+  // number/letter directly followed by opening paren → "dikali"
+  // e.g. 2(n+1) → 2 dikali (n+1)
+  text = text.replace(/([a-zA-Z0-9])\s*\(/g, "$1 dikali ");
+
+  // Strip remaining parentheses (content already handled above)
+  text = text.replace(/[()]/g, " ");
+
   // Add spoken words for minus, plus, equals
   // Match digit/letter before operator with optional spaces (LaTeX often has no spaces)
   text = text.replace(/([a-zA-Z0-9])\s*-\s*/g, "$1 minus ");
@@ -100,6 +110,9 @@ export function latexToSpeech(text: string): string {
   result = result.replace(/^[-*+]\s+/gm, ""); // unordered list items
   result = result.replace(/^\d+\.\s+/gm, ""); // ordered list items
   result = result.replace(/^[|].*$/gm, ""); // table rows
+
+  // Indonesian ordinal prefix: "ke-3" → "ke 3", "ke-n" → "ke n"
+  result = result.replace(/\bke-(\w)/g, "ke $1");
 
   // Collapse extra whitespace
   result = result.replace(/\n{3,}/g, "\n\n");

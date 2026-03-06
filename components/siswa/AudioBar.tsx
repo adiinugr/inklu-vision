@@ -150,18 +150,28 @@ export default function AudioBar({ sections, autoPlay = false, moduleTitle }: Au
         speakAndMic(`Pilihan ${option.toUpperCase()} tidak tersedia. Coba lagi.`);
         return;
       }
-      const isCorrect = option.toLowerCase() === correctAnswer.trim().toLowerCase();
+      // correctAnswer may be stored as full option text — find which index it matches
+      const correctIdx = options.findIndex(
+        (o) => o.trim().toLowerCase() === correctAnswer.trim().toLowerCase()
+      );
+      const correctLetter = correctIdx >= 0
+        ? String.fromCharCode(65 + correctIdx)
+        : correctAnswer.trim().toUpperCase();
+      const correctText = correctIdx >= 0 ? options[correctIdx] : correctAnswer;
+      const isCorrect = optionIndex === correctIdx;
+
       let feedback: string;
       if (isCorrect) {
         feedback = `Benar! Jawaban ${option.toUpperCase()} adalah ${matched}.`;
       } else {
-        const correctIdx = correctAnswer.trim().toLowerCase().charCodeAt(0) - "a".charCodeAt(0);
-        const correctText = options[correctIdx] ?? correctAnswer;
-        feedback = `Kurang tepat. Kamu memilih ${option.toUpperCase()}: ${matched}. Jawaban yang benar adalah ${correctAnswer.toUpperCase()}: ${correctText}.`;
+        feedback = `Kurang tepat. Kamu memilih ${option.toUpperCase()}: ${matched}. Jawaban yang benar adalah ${correctLetter}: ${correctText}.`;
       }
       setMode("reading");
       modeRef.current = "reading";
       speakAndMic(feedback, () => setTimeout(advanceFromInteractive, 800));
+    } else {
+      // No options — free text question, can't answer with a letter
+      speakAndMic("Soal ini tidak memiliki pilihan jawaban. Katakan jawab untuk saya bacakan jawabannya.");
     }
   }
 
@@ -171,9 +181,14 @@ export default function AudioBar({ sections, autoPlay = false, moduleTitle }: Au
     const { options, correctAnswer } = section.interactiveQuestion;
     let answerText: string;
     if (options && options.length > 0) {
-      const correctIdx = correctAnswer.trim().toLowerCase().charCodeAt(0) - "a".charCodeAt(0);
-      const correctText = options[correctIdx] ?? correctAnswer;
-      answerText = `Jawaban yang benar adalah ${correctAnswer.toUpperCase()}: ${correctText}.`;
+      const correctIdx = options.findIndex(
+        (o) => o.trim().toLowerCase() === correctAnswer.trim().toLowerCase()
+      );
+      const correctLetter = correctIdx >= 0 ? String.fromCharCode(65 + correctIdx) : "";
+      const correctText = correctIdx >= 0 ? options[correctIdx] : correctAnswer;
+      answerText = correctLetter
+        ? `Jawaban yang benar adalah ${correctLetter}: ${correctText}.`
+        : `Jawaban yang benar adalah: ${correctText}.`;
     } else {
       answerText = `Jawaban yang benar adalah: ${correctAnswer}.`;
     }
@@ -197,11 +212,11 @@ export default function AudioBar({ sections, autoPlay = false, moduleTitle }: Au
         // After reading the practice question, speak the prompt then wait for answer
         setTimeout(() => {
           speakAndMic(
-            "Sebutkan jawabannya, atau katakan jawab jika ingin saya bacakan jawabannya.",
+            "Katakan pilih A, pilih Be, pilih Ce, atau pilih De untuk menjawab. Atau katakan jawab untuk saya bacakan jawabannya.",
             () => {
               setMode("awaiting_answer");
               modeRef.current = "awaiting_answer";
-              setStatusText("Menunggu jawaban Anda...");
+              setStatusText("Menunggu jawaban — ucapkan \"pilih A/Be/Ce/De\" atau \"jawab\"");
               // speakAndMic already restarts the mic 350ms after this onEnd fires
             }
           );
@@ -383,7 +398,7 @@ export default function AudioBar({ sections, autoPlay = false, moduleTitle }: Au
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const { isListening, isSupported: micSupported, startListening, stopListening } =
+  const { isListening, isSupported: micSupported, isBlocked: micBlocked, startListening, stopListening } =
     useVoiceCommands(handleCommand);
 
   // Keep refs in sync so functions defined above can access start/stopListening
@@ -528,13 +543,29 @@ export default function AudioBar({ sections, autoPlay = false, moduleTitle }: Au
       className="fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-700 bg-zinc-900 px-4 py-3 shadow-2xl"
     >
       <div className="mx-auto max-w-3xl">
+        {/* Mic permission blocked banner */}
+        {micBlocked && (
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="mb-2 flex items-center gap-2 rounded-xl bg-amber-900/60 px-3 py-2 text-xs text-amber-200"
+          >
+            <span>🎤</span>
+            <span>
+              Izin mikrofon diperlukan. Tekan tombol{" "}
+              <strong>Perintah</strong> lalu klik{" "}
+              <strong>Izinkan</strong> di browser untuk mengaktifkan perintah suara.
+            </span>
+          </div>
+        )}
+
         {/* Voice command help panel */}
         {showHelp && (
           <div
             role="region"
             aria-label="Daftar perintah suara"
             aria-live="polite"
-            className="mb-2 rounded-xl bg-zinc-800 p-3 text-xs text-zinc-300"
+            className="mb-2 rounded-xl bg-zinc-800 p-3 text-xs text-zinc-300 max-h-48 overflow-y-auto"
           >
             <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
               <span className="col-span-2 mb-1 font-semibold text-white">Kontrol Bacaan</span>
@@ -544,7 +575,7 @@ export default function AudioBar({ sections, autoPlay = false, moduleTitle }: Au
               <span className="text-zinc-400">&ldquo;Berhenti&rdquo;</span><span>Hentikan pembacaan</span>
               <span className="text-zinc-400">&ldquo;Ulangi&rdquo;</span><span>Ulangi bagian ini</span>
               <span className="col-span-2 mt-2 mb-1 font-semibold text-white">Menjawab Latihan</span>
-              <span className="text-zinc-400">&ldquo;A&rdquo; / &ldquo;B&rdquo; / &ldquo;C&rdquo; / &ldquo;D&rdquo;</span><span>Pilih jawaban</span>
+              <span className="text-zinc-400">&ldquo;Pilih A/Be/Ce/De&rdquo;</span><span>Pilih jawaban</span>
               <span className="text-zinc-400">&ldquo;Jawab&rdquo;</span><span>Minta bacakan jawaban</span>
               <span className="text-zinc-400">&ldquo;Berikutnya&rdquo;</span><span>Lewati soal ini</span>
               <span className="col-span-2 mt-2 mb-1 font-semibold text-white">Navigasi Bagian</span>
@@ -560,14 +591,14 @@ export default function AudioBar({ sections, autoPlay = false, moduleTitle }: Au
         )}
 
         {/* ── Mobile layout (< md) ── */}
-        <div className="md:hidden space-y-2">
+        <div className="md:hidden space-y-1.5">
           {/* Row 1: nav + play/pause + stop */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={goToPrev}
               disabled={currentSectionIndex === 0}
               aria-label="Bagian sebelumnya"
-              className="flex min-h-[52px] items-center justify-center rounded-xl px-4 text-zinc-300 transition hover:bg-zinc-700 disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              className="flex min-h-[44px] w-10 items-center justify-center rounded-xl text-zinc-300 transition hover:bg-zinc-700 disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
@@ -581,14 +612,14 @@ export default function AudioBar({ sections, autoPlay = false, moduleTitle }: Au
                   ? "Lanjutkan pembacaan"
                   : "Mulai membaca"
               }
-              className="flex flex-1 min-h-[52px] items-center justify-center gap-2 rounded-xl bg-white font-semibold text-zinc-900 transition hover:bg-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              className="flex flex-1 min-h-[44px] items-center justify-center gap-2 rounded-xl bg-white font-semibold text-zinc-900 transition hover:bg-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
               {isSpeaking && !isPaused ? (
-                <Pause className="h-5 w-5" />
+                <Pause className="h-4 w-4" />
               ) : (
-                <Play className="h-5 w-5" />
+                <Play className="h-4 w-4" />
               )}
-              <span>
+              <span className="text-sm">
                 {isSpeaking && !isPaused
                   ? "Jeda"
                   : isPaused
@@ -600,31 +631,27 @@ export default function AudioBar({ sections, autoPlay = false, moduleTitle }: Au
             <button
               onClick={handleStop}
               aria-label="Hentikan pembacaan"
-              className="flex min-h-[52px] items-center justify-center rounded-xl border border-zinc-600 px-4 text-zinc-300 transition hover:bg-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              className="flex min-h-[44px] w-10 items-center justify-center rounded-xl border border-zinc-600 text-zinc-300 transition hover:bg-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
-              <Square className="h-5 w-5" />
+              <Square className="h-4 w-4" />
             </button>
 
             <button
               onClick={goToNext}
               disabled={currentSectionIndex === sections.length - 1}
               aria-label="Bagian berikutnya"
-              className="flex min-h-[52px] items-center justify-center rounded-xl px-4 text-zinc-300 transition hover:bg-zinc-700 disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              className="flex min-h-[44px] w-10 items-center justify-center rounded-xl text-zinc-300 transition hover:bg-zinc-700 disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
               <ChevronRight className="h-5 w-5" />
             </button>
-          </div>
 
-          {/* Row 2: mic + section label + help */}
-          <div className="flex items-center gap-2">
+            {/* Mic toggle inline on mobile */}
             {micSupported ? (
               <button
                 onClick={toggleMic}
                 aria-pressed={isListening}
-                aria-label={
-                  isListening ? "Matikan mikrofon" : "Aktifkan perintah suara"
-                }
-                className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white ${
+                aria-label={isListening ? "Matikan mikrofon" : "Aktifkan perintah suara"}
+                className={`flex min-h-[44px] w-10 items-center justify-center rounded-xl border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white ${
                   isListening
                     ? "border-red-500 bg-red-500/20 text-red-300"
                     : "border-zinc-600 text-zinc-300 hover:bg-zinc-700"
@@ -635,39 +662,37 @@ export default function AudioBar({ sections, autoPlay = false, moduleTitle }: Au
                 ) : (
                   <MicOff className="h-4 w-4" />
                 )}
-                <span>{isListening ? "Mendengarkan" : "Perintah"}</span>
               </button>
             ) : null}
-
-            {currentSection && (
-              <span className="flex-1 truncate text-xs text-zinc-400">
-                {currentSectionIndex + 1}/{sections.length}: {currentSection.label}
-              </span>
-            )}
 
             <button
               onClick={() => setShowHelp((h) => !h)}
               aria-expanded={showHelp}
               aria-label="Tampilkan daftar perintah suara"
-              className="rounded-xl border border-zinc-600 px-2 py-2 text-xs text-zinc-400 hover:bg-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              className="flex min-h-[44px] w-8 items-center justify-center rounded-xl border border-zinc-600 text-xs text-zinc-400 hover:bg-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
               ?
             </button>
           </div>
 
-          {/* Status */}
-          <p aria-live="polite" className="truncate text-xs text-zinc-400">
-            {mode === "awaiting_answer" ? (
-              <span className="font-medium text-yellow-400">Menunggu jawaban — ucapkan A/B/C/D atau &ldquo;jawab&rdquo;</span>
-            ) : (
-              statusText
-            )}
-            {isListening && mode !== "awaiting_answer" && (
-              <span className="ml-2 font-medium text-red-400">
-                🎤 Mendengarkan...
+          {/* Status + section label */}
+          <div className="flex items-center gap-2 min-w-0">
+            {currentSection && (
+              <span className="truncate text-xs text-zinc-500">
+                {currentSectionIndex + 1}/{sections.length}: {currentSection.label}
               </span>
             )}
-          </p>
+            {isListening && (
+              <span className="shrink-0 text-xs font-medium text-red-400">🎤</span>
+            )}
+          </div>
+
+          {/* Awaiting answer status */}
+          {mode === "awaiting_answer" && (
+            <p aria-live="polite" className="text-xs font-medium text-yellow-400">
+              Ucapkan &ldquo;pilih A/Be/Ce/De&rdquo; atau &ldquo;jawab&rdquo;
+            </p>
+          )}
         </div>
 
         {/* ── Desktop layout (md+) ── */}

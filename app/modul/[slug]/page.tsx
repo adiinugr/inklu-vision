@@ -85,7 +85,7 @@ export default async function ModulPage({
   ];
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 pb-24">
+    <div className="mx-auto max-w-3xl px-4 py-6 sm:py-8 pb-44 sm:pb-28">
       <ModuleHeader
         title={mod.title}
         description={mod.description}

@@ -50,7 +50,7 @@ export default async function HomePage({
     <div className="mx-auto max-w-5xl px-4">
 
       {/* ── Page Header (always visible) ──────────────────────────── */}
-      <header className="pt-8 pb-4 text-center">
+      <header className="pt-6 pb-4 text-center">
         <span
           className="inline-flex items-center gap-1.5 mb-3 rounded-full px-3 py-1 text-xs font-semibold text-white"
           style={{ backgroundColor: "#FF385C" }}
@@ -59,10 +59,10 @@ export default async function HomePage({
           <Eye className="h-3 w-3" aria-hidden="true" />
           Dirancang untuk Siswa Tunanetra
         </span>
-        <h1 className="text-3xl lg:text-4xl font-bold text-zinc-900 leading-tight">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-zinc-900 leading-tight">
           InkluVision
         </h1>
-        <p className="mt-2 text-base text-zinc-500 max-w-xl mx-auto">
+        <p className="mt-2 text-sm sm:text-base text-zinc-500 max-w-xl mx-auto">
           Belajar dengan suara, tanpa perlu melihat layar
         </p>
       </header>
@@ -71,7 +71,7 @@ export default async function HomePage({
       <section
         id="cari-modul"
         aria-labelledby="search-heading"
-        className="mb-10 rounded-3xl border border-zinc-100 bg-white shadow-lg p-6 lg:p-8"
+        className="mb-8 rounded-3xl border border-zinc-100 bg-white shadow-lg p-4 sm:p-6 lg:p-8"
       >
         <h2
           id="search-heading"
@@ -102,7 +102,7 @@ export default async function HomePage({
             />
             <button
               type="submit"
-              className="min-h-[56px] rounded-2xl px-8 text-sm font-semibold text-white transition-colors"
+              className="min-h-[56px] rounded-2xl px-5 sm:px-8 text-sm font-semibold text-white transition-colors shrink-0"
               style={{ backgroundColor: "#FF385C" }}
             >
               Cari

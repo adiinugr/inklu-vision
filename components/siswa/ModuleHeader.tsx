@@ -21,9 +21,9 @@ export default function ModuleHeader({
         <Badge variant="info">Kode: {accessCode}</Badge>
         <Badge variant="default">{questionCount} soal</Badge>
       </div>
-      <h1 className="mb-3 text-3xl font-bold text-zinc-900">{title}</h1>
+      <h1 className="mb-3 text-2xl sm:text-3xl font-bold text-zinc-900">{title}</h1>
       {description && (
-        <p className="mb-3 text-lg text-zinc-600">{description}</p>
+        <p className="mb-3 text-base sm:text-lg text-zinc-600">{description}</p>
       )}
       <p className="text-sm text-zinc-500">
         Dibuat oleh <span className="font-medium text-zinc-700">{authorName}</span>

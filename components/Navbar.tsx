@@ -59,7 +59,8 @@ export default async function Navbar() {
               className="rounded-2xl px-4 py-2 text-sm font-semibold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
               style={{ backgroundColor: "#FF385C" }}
             >
-              Masuk sebagai Guru
+              <span className="sm:hidden">Masuk</span>
+              <span className="hidden sm:inline">Masuk sebagai Guru</span>
             </Link>
           )}
         </div>

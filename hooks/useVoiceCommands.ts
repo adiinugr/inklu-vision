@@ -22,6 +22,7 @@ export type ParsedCommand =
 export interface UseVoiceCommandsReturn {
   isListening: boolean;
   isSupported: boolean;
+  isBlocked: boolean;
   startListening: () => void;
   stopListening: () => void;
   lastRawTranscript: string;
@@ -108,11 +109,11 @@ function parseCommand(transcript: string): ParsedCommand {
   }
 
   // 3. Indonesian letter pronunciations (id-ID ASR renders letters by name):
-  //    B → "be", C → "ce" or "se", D → "de"
+  //    A → "a", B → "be", C → "ce", D → "de"
   const idLetterMap: Record<string, string> = {
     be: "b",
     ce: "c",
-    se: "c",
+    se: "c", // "ce" sometimes transcribed as "se"
     de: "d",
   };
   if (idLetterMap[t] !== undefined) {
@@ -135,6 +136,7 @@ export function useVoiceCommands(
   // Start false to match SSR; set true after mount if browser supports it
   const [isSupported, setIsSupported] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
 
   useEffect(() => {
     setIsSupported(
@@ -178,6 +180,7 @@ export function useVoiceCommands(
     recognition.onerror = (event: any) => {
       if (event.error === "no-speech") return; // expected — keep going
       console.warn("[VoiceCommands] recognition error:", event.error);
+      if (event.error === "no-speech") return;
       if (event.error === "network") {
         if (isListeningRef.current) {
           setTimeout(() => {
@@ -192,6 +195,12 @@ export function useVoiceCommands(
         }
       } else if (event.error === "aborted") {
         // Triggered by recognition.stop() — not a real error, onend will handle restart
+      } else if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        // Microphone permission denied — requires user gesture on new domains (HTTPS)
+        setIsBlocked(true);
+        setIsListening(false);
+        isListeningRef.current = false;
+        recognitionRef.current = null;
       } else {
         // For any other error, discard the broken recognition object so
         // the next startListening() creates a fresh one instead of reusing it.
@@ -227,6 +236,7 @@ export function useVoiceCommands(
     }
 
     if (!isListeningRef.current) {
+      setIsBlocked(false);
       isListeningRef.current = true;
       setIsListening(true);
       try {
@@ -261,6 +271,7 @@ export function useVoiceCommands(
   return {
     isListening,
     isSupported,
+    isBlocked,
     startListening,
     stopListening,
     lastRawTranscript,

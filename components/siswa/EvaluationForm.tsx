@@ -207,16 +207,14 @@ export default function EvaluationForm({
   useEffect(() => {
     if (!audioEnabled || !ttsSupported || phase !== "identity") return;
     speak(
-      "Selamat datang di evaluasi. Masukkan nama dan kelas, lalu tekan Mulai Mengerjakan."
+      "Selamat datang di evaluasi. Nama dan kelas bersifat opsional. Tekan Mulai Mengerjakan untuk langsung memulai."
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audioEnabled, ttsSupported]);
 
   function handleStartAnswering() {
-    if (!studentName.trim() || !studentClass.trim()) {
-      setError("Harap isi nama dan kelas terlebih dahulu.");
-      return;
-    }
+    if (!studentName.trim()) setStudentName("Anonim");
+    if (!studentClass.trim()) setStudentClass("-");
     setError("");
     setPhase("answering");
   }
@@ -224,32 +222,25 @@ export default function EvaluationForm({
   if (phase === "identity") {
     return (
       <Card>
-        <h2 className="mb-4 text-xl font-bold text-zinc-900">
+        <h2 className="mb-2 text-xl font-bold text-zinc-900">
           Mulai Evaluasi
         </h2>
-        <p className="mb-6 text-zinc-600">
-          Isi data dirimu sebelum mengerjakan soal evaluasi.
+        <p className="mb-5 text-sm text-zinc-500">
+          Nama dan kelas bersifat opsional — kosongkan jika tidak ingin mengisi.
         </p>
-        <div className="space-y-4">
+        <div className="space-y-3">
           <Input
-            label="Nama Lengkap"
-            placeholder="Masukkan nama lengkapmu"
+            label="Nama Lengkap (opsional)"
+            placeholder="Kosongkan untuk anonim"
             value={studentName}
             onChange={(e) => setStudentName(e.target.value)}
-            required
           />
           <Input
-            label="Kelas"
+            label="Kelas (opsional)"
             placeholder="Contoh: 10A"
             value={studentClass}
             onChange={(e) => setStudentClass(e.target.value)}
-            required
           />
-          {error && (
-            <p className="text-sm text-red-600" role="alert">
-              {error}
-            </p>
-          )}
           <Button onClick={handleStartAnswering} className="w-full">
             Mulai Mengerjakan
           </Button>
