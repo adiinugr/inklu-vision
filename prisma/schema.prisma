@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  modules   Module[]
+}
+
+model Module {
+  id          String    @id @default(cuid())
+  title       String
+  slug        String    @unique
+  accessCode  String    @unique
+  description String?
+  content     String    @db.Text
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  authorId    String
+  author      User      @relation(fields: [authorId], references: [id])
+  questions   Question[]
+  results     StudentResult[]
+}
+
+model Question {
+  id            String       @id @default(cuid())
+  moduleId      String
+  module        Module       @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  type          QuestionType
+  questionText  String       @db.Text
+  options       Json?
+  correctAnswer String
+  explanation   String?      @db.Text
+  order         Int
+}
+
+model StudentResult {
+  id           String   @id @default(cuid())
+  moduleId     String
+  module       Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  studentName  String
+  studentClass String
+  score        Float
+  answers      Json
+  createdAt    DateTime @default(now())
+}
+
+enum QuestionType {
+  EXAMPLE
+  PRACTICE
+  EVALUATION
+}
